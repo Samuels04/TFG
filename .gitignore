@@ -3,3 +3,4 @@
 /.python-version
 /src/.DS_Store
 /data/raw
+/src/__pycache__
