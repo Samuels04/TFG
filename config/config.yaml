@@ -1,3 +1,4 @@
 version: 0.0.1
 sample-rate: 4000
 n-fft: 256
+raw-data: "../data/raw"
