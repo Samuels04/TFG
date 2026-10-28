@@ -4,3 +4,6 @@
 /src/.DS_Store
 /data/raw
 /src/__pycache__
+/data/interim/inventory.csv
+/src/datasets/__pycache__
+/src/datasets/__pycache__
