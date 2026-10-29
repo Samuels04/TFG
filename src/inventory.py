@@ -23,12 +23,17 @@ def generate():
         #print(folder)
         match dataset:
             case "HLS-CMDS":
-                patient, annotations = src.datasets.hls.read_annotations(file, folder)
+                patient, annotations, label = src.datasets.hls.read_annotations(file, folder)
                 location = None if annotations.empty else annotations.Location.values[0]
+                lung_label = None if label is None else label[0]
+                heart_label = None if label is None else label[1]
+                disease = None
             case "NIH":
-                annotations = src.datasets.nih.read_annotations(file)
+                patient, annotations, disease = src.datasets.nih.read_annotations(file)
+                lung_label = None
                 location = annotations.Location
-                patient = f"NIH{int(re.search(r"\d+(?=_)", file.name).group())}"
+            case _:
+                raise ValueError()
 
         #display(annotations)
         audio, sr = sf.read(file)
@@ -49,11 +54,11 @@ def generate():
             hash = hashlib.file_digest(f, "sha256").hexdigest()
 
         inventory_l.append([
-            file.name, dataset, patient, location, hash, sr_f, channels, bit_depth, is_float, peak, rms, dc_offset, clipping, duration, None,
+            file.name, dataset, patient, location, hash, sr_f, channels, bit_depth, is_float, peak, rms, dc_offset, clipping, duration, lung_label, heart_label, disease
         ])
         #break
 
-    inventory = pd.DataFrame(inventory_l, columns=["file", "dataset", "patient", "position", "hash", "sample_rate", "channels", "bit_depth", "is_float", "peak", "rms", "dc_offset", "clipping", "duration", "annotation"])
+    inventory = pd.DataFrame(inventory_l, columns=["file", "dataset", "patient", "position", "hash", "sample_rate", "channels", "bit_depth", "is_float", "peak", "rms", "dc_offset", "clipping", "duration", "lung_label", "heart_label", "disease"])
     inventory.to_csv("../data/interim/inventory.csv")
     print("Inventory file has been generated")
     return inventory
