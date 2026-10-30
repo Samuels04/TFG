@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import yaml
 from pathlib import Path
 
-
-
 def load_dataset_csv(directory: str, annotation_file: str, subdirectory: str):
+    """Load dataset (that has .csv annotations) for working with the files. Returns the annotations file,
+        an array with the filenames, an array with the files and an array with the sample_rates of the files"""
     #Load annotations for HLS-CMDS
     annotations = pd.read_csv(f"{directory}/{annotation_file}")
 
@@ -23,6 +23,8 @@ def load_dataset_csv(directory: str, annotation_file: str, subdirectory: str):
     return annotations, files, sounds, srl
 
 def load_dataset_xlsx(directory: str, annotation_file: str, subdirectory: str):
+    """Load dataset (that has .csv annotations) for working with the files. Returns the annotations file,
+        an array with the filenames, an array with the files and an array with the sample_rates of the files"""
     #Load annotations for HLS-CMDS
     annotations = pd.read_excel(f"{directory}/{annotation_file}")
 
@@ -37,6 +39,7 @@ def load_dataset_xlsx(directory: str, annotation_file: str, subdirectory: str):
     return annotations, files, sounds, srl
 
 def spectrogram(lungSounds: np.ndarray, lungFiles: list[str], lungSR: np.ndarray):
+    """Generate the spectrogram for a given audio file"""
     config = open_config()
     for n, f in enumerate(lungSounds):
         fig = plt.figure(figsize=(6,4))
@@ -48,6 +51,7 @@ def spectrogram(lungSounds: np.ndarray, lungFiles: list[str], lungSR: np.ndarray
     return fig
 
 def open_config(): 
+    """Open and return the global configuration file config.yaml"""
     # config.yaml lives in the "config" directory, a sibling of this file's directory
     CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "config.yaml"
 
