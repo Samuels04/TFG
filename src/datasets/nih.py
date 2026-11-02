@@ -17,7 +17,3 @@ def read_annotations(file: Path):
     location = row["Location"]
     label = str(row["Diagnosis"]).lower()
     return patient, location, label
-
-def group_label(x: DataFrame):
-    #TODO
-    return

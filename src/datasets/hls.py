@@ -59,9 +59,3 @@ def read_annotations(file: Path, type_rec: str = "Lung"):
 
     
     print(f"file={file.name}, soundID={soundID}")
-
-def group_label(x: DataFrame):
-    if len(x) == 1:
-        label = f"L:{x["lung_label"]}" if x["lung_label"] is not None else f"H:{x["heart_label"]}"
-    elif len(x) == 3:
-        label = f"L:{x["lung_label"]}, H:{x["lung_label"]}"

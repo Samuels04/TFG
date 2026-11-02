@@ -31,12 +31,24 @@ def generate():
         match dataset:
             case "HLS-CMDS":
                 patient, location, label = src.datasets.hls.read_annotations(file, folder)
-                lung_label = None if label is None else label[0]
-                heart_label = None if label is None else label[1]
+                if label is None:
+                    lung_label = None
+                    heart_label = None
+                    strat_key = None
+                else:
+                    lung_label = label[0]
+                    heart_label = label[1]
+                    if lung_label is None:
+                        strat_key = f"HLS-H:{heart_label}"
+                    elif heart_label is None:
+                        strat_key = f"HLS-L:{lung_label}"
+                    else:
+                        strat_key = f"HLS-L:{lung_label}|H:{heart_label}"
                 disease = None
             case "NIH":
                 patient, location, disease = src.datasets.nih.read_annotations(file)
                 lung_label = None
+                strat_key = f"NIH:{disease}"
             case _:
                 raise ValueError()
 
@@ -62,11 +74,11 @@ def generate():
             hash = hashlib.file_digest(f, "sha256").hexdigest()
         #Append the row with the values to a list of lists
         inventory_l.append([
-            file.name, dataset, patient, location, hash, sr_f, channels, bit_depth, is_float, peak, rms, dc_offset, clipping, duration, lung_label, heart_label, disease
+            file.name, dataset, patient, location, hash, sr_f, channels, bit_depth, is_float, peak, rms, dc_offset, clipping, duration, lung_label, heart_label, disease, strat_key
         ])
         #break
     #From the list of lists created during the traversal, generate a DataFrame, which will be parsed into a .csv file and then returned
-    inventory = pd.DataFrame(inventory_l, columns=["file", "dataset", "patient", "position", "hash", "sample_rate", "channels", "bit_depth", "is_float", "peak", "rms", "dc_offset", "clipping", "duration", "lung_label", "heart_label", "disease"])
+    inventory = pd.DataFrame(inventory_l, columns=["file", "dataset", "patient", "position", "hash", "sample_rate", "channels", "bit_depth", "is_float", "peak", "rms", "dc_offset", "clipping", "duration", "lung_label", "heart_label", "disease", "strat_key"])
     inventory.to_csv("../data/interim/inventory.csv")
     print("Inventory file has been generated")
     return inventory
