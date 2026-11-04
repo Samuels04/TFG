@@ -2,3 +2,11 @@ version: 0.0.1
 sample-rate: 4000
 n-fft: 256
 raw-data: "../data/raw"
+hls: 
+  folder: "../data/raw/HLS-CMDS"
+  lung: "../data/raw/HLS-CMDS/LS"
+  heart: "../data/raw/HLS-CMDS/HS"
+  mix: "../data/raw/HLS-CMDS/Mix"
+nih: 
+  folder: "../data/raw/NIH"
+  audio: "../data/raw/NIH/Audio Files"
