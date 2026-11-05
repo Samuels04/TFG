@@ -111,3 +111,20 @@ def split(inventory: pd.DataFrame, test_fold: int = 0, val_fold: int = 1):
     return train, val, test
 def save(inventory: pd.DataFrame): 
     inventory.to_csv("../data/interim/inventory.csv", index=False)
+
+def search_row(row: pd.Series):
+    match row.dataset:
+            case "HLS-CMDS":   
+                ds="hls" 
+                if pd.isna(row.lung_label) and ~pd.isna(row.heart_label):
+                    type = "heart"
+                elif ~pd.isna(row.lung_label) and pd.isna(row.heart_label):
+                    type = "lung"
+                elif ~pd.isna(row.lung_label) and ~pd.isna(row.heart_label):
+                    type = "mix"
+                else:
+                    raise ValueError("Both labels cannot be NaN")
+            case "NIH":
+                ds="nih"
+                type = "audio"
+    return ds, type
