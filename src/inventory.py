@@ -41,7 +41,7 @@ def generate():
                     if pd.isna(lung_label):
                         strat_key = f"HLS-H:{"Normal" if heart_label == "Normal" else "Abnormal"}"
                     elif pd.isna(heart_label):
-                        f"HLS-L:{"Normal" if lung_label == "Normal" else "Abnormal"}"
+                        strat_key = f"HLS-L:{"Normal" if lung_label == "Normal" else "Abnormal"}"
                     elif pd.isna(lung_label) and pd.isna(heart_label):
                         strat_key = "HLS:unlabelled"
                     else:
@@ -116,14 +116,14 @@ def search_row(row: pd.Series):
     match row.dataset:
             case "HLS-CMDS":   
                 ds="hls" 
-                if pd.isna(row.lung_label) and ~pd.isna(row.heart_label):
+                if pd.isna(row.lung_label) and (not pd.isna(row.heart_label)):
                     type = "heart"
-                elif ~pd.isna(row.lung_label) and pd.isna(row.heart_label):
+                elif (not pd.isna(row.lung_label)) and pd.isna(row.heart_label):
                     type = "lung"
-                elif ~pd.isna(row.lung_label) and ~pd.isna(row.heart_label):
+                elif (not pd.isna(row.lung_label)) and (not pd.isna(row.heart_label)) :
                     type = "mix"
                 else:
-                    raise ValueError("Both labels cannot be NaN")
+                    raise ValueError(f"{row.file}. Both labels cannot be NaN")
             case "NIH":
                 ds="nih"
                 type = "audio"
