@@ -97,22 +97,30 @@ def merge_duplicate_groups(inventory: pd.DataFrame):
     return inv
 
 def k_fold(inventory: pd.DataFrame):
+    """Stratifies the inventory in 5 folds so it can be divided into training, validation and testing"""
     inv = inventory.copy()
+    # Create the stratification criteria with the desired #folds and the random state (for the sake of replicability)
     sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=2027)
+    # Asign a default value of -1 to be able to detect any errors in the stratification
     inv["fold"] = -1
+    # Asign to each entrance in the inventory its own fold
     for n, (train, test) in enumerate(sgkf.split(inv, inv["strat_key"], inv["group"])):
         inv.loc[inv.index[test], "fold"] = n
 
     return inv
 def split(inventory: pd.DataFrame, test_fold: int = 0, val_fold: int = 1):
+    """Splits the inventory into training, validation and testing DataFrames according to the fold corresponding to each entrance
+    in the inventory"""
     test = inventory[inventory["fold"] == test_fold]
     val = inventory[inventory["fold"] == val_fold]
     train = inventory[~inventory["fold"].isin([test_fold, val_fold])]
     return train, val, test
 def save(inventory: pd.DataFrame): 
+    """Saves to inventory.csv any changes that might have occured to the inventory, that is passed as an argument"""
     inventory.to_csv("../data/interim/inventory.csv", index=False)
 
 def search_row(row: pd.Series):
+    """Returns the dataset and sub-folder (given as their values in config.yaml) of a certain row in the dataset"""
     match row.dataset:
             case "HLS-CMDS":   
                 ds="hls" 

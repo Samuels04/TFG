@@ -1,9 +1,30 @@
-import librosa as lib, math, scipy.signal as sig, src, pandas as pd
+import librosa as lib
+import numpy as np
+import scipy.signal as sig
+import math
+import src
 
 
-def resample(row: pd.Series, target_sample_rate: int, config):
-    dataset, group = src.inventory.search_row(row)
-    file, sr = lib.load(f"{config[dataset][group]}/{row.file}", sr=None)
+def resample(file: np.ndarray, sr: int | float, target_sample_rate: int, config):
+    """Returns a resampled version of the signal. This signal has a sample rate equal to the target passed as an argument"""
+    # First we pre-calculate the GCD of the current sample rate and the target sample rate
     gcd = math.gcd(target_sample_rate, sr)
-    file = sig.resample_poly(file, target_sample_rate//gcd, sr//gcd)
-    return file
+    # Then we resample it passing the arguments as required so the resulting sample rate equals the target
+    resampled_file = sig.resample_poly(file, target_sample_rate//gcd, sr//gcd)
+    return resampled_file
+
+def normalize(file: np.ndarray): 
+    """Returns an RMS-Normalized version of the signal"""
+    # A constant added to the RMS so there never is a division by 0
+    EPSILON = 1e-8
+    # First we substract from each signal (file) its mean
+    normalized_file = file - np.mean(file)
+    # Then we calculate its RMS
+    rms = np.sqrt(np.mean(normalized_file**2))
+    print(f"post: {rms}")
+    # Then we divide the signal (file) by its RMS added to EPSILON just in case it ever were 0
+    normalized_file /= (rms + EPSILON)
+    rms = np.sqrt(np.mean(normalized_file**2))
+    print(f"post-post: {rms}")
+
+    return normalized_file
