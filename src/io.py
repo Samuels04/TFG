@@ -38,8 +38,8 @@ def load_dataset_xlsx(directory: str, annotation_file: str, subdirectory: str):
         srl[n] = sr
     return annotations, files, sounds, srl
 
-def spectrogram(lungSounds: np.ndarray, lungFiles: list[str], lungSR: np.ndarray):
-    """Generate the spectrogram for a given audio file"""
+def spectrogram_array(lungSounds: np.ndarray, lungFiles: list[str], lungSR: np.ndarray):
+    """Generate the spectrogram for an array of audio files"""
     config = open_config()
     for n, f in enumerate(lungSounds):
         fig = plt.figure(figsize=(6,4))
@@ -48,6 +48,17 @@ def spectrogram(lungSounds: np.ndarray, lungFiles: list[str], lungSR: np.ndarray
         img = lib.display.specshow(spec, sr=lungSR[n], hop_length=config['n-fft'] // 4,
                                 x_axis="time", y_axis="linear")
         plt.title(f"{lungFiles[n]}, sr={lungSR[n]}")
+    return fig
+
+def spectrogram(file: np.ndarray, name: str, sample_rate: int | float):
+    """Generate the spectrogram for an array of audio files"""
+    config = open_config()
+    fig = plt.figure(figsize=(6,4))
+    #Transform the amplitude to dB so we have a logarithmic instead of linear plot
+    spec = lib.amplitude_to_db(np.abs(lib.stft(file, n_fft=config['n-fft'])), ref=np.max)
+    img = lib.display.specshow(spec, sr=sample_rate, hop_length=config['n-fft'] // 4,
+                            x_axis="time", y_axis="linear")
+    plt.title(f"{name}, sr={sample_rate}")
     return fig
 
 def open_config(): 

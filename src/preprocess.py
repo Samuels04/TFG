@@ -28,3 +28,6 @@ def normalize(file: np.ndarray):
     print(f"post-post: {rms}")
 
     return normalized_file
+
+def band_split(file: np.ndarray):
+    return file
