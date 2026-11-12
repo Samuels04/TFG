@@ -6,6 +6,7 @@ import src.io
 import re
 import hashlib
 import yaml
+from enum import Enum
 from sklearn.model_selection import StratifiedGroupKFold
 
 def generate():
@@ -136,3 +137,27 @@ def search_row(row: pd.Series):
                 ds="nih"
                 type = "audio"
     return ds, type
+
+class Type(Enum):
+    LUNG = "lung"
+    HEART = "heart"
+    MIX = "mix"
+    UNKNOWN = ""
+
+    @classmethod
+    def match_file(cls, dataset: str, group: str) -> "Type":
+        match dataset.lower():
+            case "hls" | "hls-cmds":
+                match group.lower():
+                    case "lung":
+                        return cls.LUNG
+                    case "heart":
+                        return cls.HEART
+                    case "mix":
+                        return cls.MIX
+                    case _:
+                        return cls.UNKNOWN
+            case "nih":
+                return cls.LUNG
+            case _:
+                return cls.UNKNOWN

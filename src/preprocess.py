@@ -3,6 +3,7 @@ import numpy as np
 import scipy.signal as sig
 import math
 import src
+from src.inventory import Type
 
 
 def resample(file: np.ndarray, sr: int | float, target_sample_rate: int, config):
@@ -29,5 +30,14 @@ def normalize(file: np.ndarray):
 
     return normalized_file
 
-def band_split(file: np.ndarray):
+def band_split(file: np.ndarray, type: Type, config, target_sr):
+    match type:
+        case Type.LUNG:
+            sig.butter(N=4, Wn=[50, 2500], btype='bandpass', output="sos", fs=target_sr)
+        case Type.HEART:
+            sig.butter(N=4, Wn=[20, 400], btype='bandpass', output="sos", fs=target_sr)
+        case Type.MIX:
+            sig.butter(N=4, Wn=[], btype='bandpass', output="sos", fs=target_sr)
+        case Type.UNKNOWN:
+            raise ValueError("Unknown type of audio file")
     return file
