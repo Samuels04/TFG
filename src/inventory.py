@@ -138,14 +138,14 @@ def search_row(row: pd.Series):
                 type = "audio"
     return ds, type
 
-class Type(Enum):
+class AudioType(Enum):
     LUNG = "lung"
     HEART = "heart"
     MIX = "mix"
     UNKNOWN = ""
 
     @classmethod
-    def match_file(cls, dataset: str, group: str) -> "Type":
+    def match_file(cls, dataset: str, group: str) -> "AudioType":
         match dataset.lower():
             case "hls" | "hls-cmds":
                 match group.lower():
