@@ -3,41 +3,47 @@ import numpy as np
 import scipy.signal as sig
 import math
 import src
-from src.inventory import Type
+from src.types import AudioType
 
 
 def resample(file: np.ndarray, sr: int | float, target_sample_rate: int, config):
-    """Returns a resampled version of the signal. This signal has a sample rate equal to the target passed as an argument"""
-    # First we pre-calculate the GCD of the current sample rate and the target sample rate
+    """Return the signal resampled from sr to target_sample_rate.
+
+    Uses polyphase resampling (scipy resample_poly), which also applies an anti-aliasing filter.
+    """
+    # NOTE: the config argument is not used
+    # resample_poly works with an integer up/down ratio; dividing by the GCD gives the smallest one
     gcd = math.gcd(target_sample_rate, sr)
-    # Then we resample it passing the arguments as required so the resulting sample rate equals the target
     resampled_file = sig.resample_poly(file, target_sample_rate//gcd, sr//gcd)
     return resampled_file
 
 def normalize(file: np.ndarray): 
-    """Returns an RMS-Normalized version of the signal"""
-    # A constant added to the RMS so there never is a division by 0
+    """Return the signal with its mean removed and scaled to RMS = 1.
+
+    This makes recordings with different gain comparable.
+    """
+    # Avoids dividing by 0 on a silent signal
     EPSILON = 1e-8
-    # First we substract from each signal (file) its mean
+    # Remove the DC offset first so it does not count towards the RMS
     normalized_file = file - np.mean(file)
-    # Then we calculate its RMS
     rms = np.sqrt(np.mean(normalized_file**2))
+    # NOTE: debug prints
     print(f"post: {rms}")
-    # Then we divide the signal (file) by its RMS added to EPSILON just in case it ever were 0
     normalized_file /= (rms + EPSILON)
     rms = np.sqrt(np.mean(normalized_file**2))
     print(f"post-post: {rms}")
 
     return normalized_file
 
-def band_split(file: np.ndarray, type: Type, config, target_sr):
+def band_split(file: np.ndarray, type: AudioType, config, target_sr):
     match type:
-        case Type.LUNG:
-            sig.butter(N=4, Wn=[50, 2500], btype='bandpass', output="sos", fs=target_sr)
-        case Type.HEART:
-            sig.butter(N=4, Wn=[20, 400], btype='bandpass', output="sos", fs=target_sr)
-        case Type.MIX:
-            sig.butter(N=4, Wn=[], btype='bandpass', output="sos", fs=target_sr)
-        case Type.UNKNOWN:
+        case AudioType.LUNG:
+            window = [config["lung-window"]]
+            sos = sig.butter(N=4, Wn=window, btype='bandpass', output="sos", fs=target_sr)
+        case AudioType.HEART:
+            sos = sig.butter(N=4, Wn=window, btype='bandpass', output="sos", fs=target_sr)
+        case AudioType.MIX:
+            sos = sig.butter(N=4, Wn=window, btype='bandpass', output="sos", fs=target_sr)
+        case AudioType.UNKNOWN:
             raise ValueError("Unknown type of audio file")
     return file

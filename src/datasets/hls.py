@@ -6,82 +6,103 @@ from src.types import AudioType
 PATH = Path(__file__).resolve().parent.parent.parent / "data" / "raw" / "HLS-CMDS"
 
 def read_annotations(file: Path, type_rec: AudioType = AudioType.LUNG):
-    """Reads the annotations for the dataset, extracts the corresponding file's row and returns
-    the patient code, the location of the recording, the label for the recording and its stratification
-    key, all depending on the type of audio file received"""
-    #Depending on the type of data to be read, we should open the corresponding file
+    """Read the HLS-CMDS annotations for one recording.
+
+    Args:
+        file: path to the .wav file.
+        type_rec: sub-folder the file comes from (LUNG = LS, HEART = HS, MIX = Mix).
+            It selects which CSV is read.
+
+    Returns:
+        (patient, location, label, strat_key, content):
+        - patient: "HLS-LS{n}", "HLS-HS{n}" or "HLS-Mix{n}". HLS has no real patient IDs, so this is
+          a per-recording ID.
+        - location: chest position, or None if the file is not in the CSV.
+        - label: tuple (lung_label, heart_label) with None in the part the file does not contain,
+          or None if a label is missing.
+        - strat_key: "HLS-L:{Normal|Abnormal}", "HLS-H:{...}", "HLS-L:{...}|H:{...}" or "...:unlabelled".
+        - content: sound the file contains: 'L', 'H' or 'M'. For Mix it comes from the filename.
+
+    Raises:
+        ValueError: if type_rec is not LUNG, HEART or MIX, or if the content of a Mix file
+            cannot be determined from its name.
+    """
+    # Sound ID = filename without ".wav"
+    soundID = re.search(r".*(?=.wav$)", file.name).group()
+
+    # Each sub-folder only differs in where to look: which CSV, which ID columns,
+    # and what sound its files contain. Everything after the match is shared.
     match type_rec:
-        case AudioType.LUNG: 
-            # Read the corresponding csv file
+        case AudioType.LUNG:
+            folder = "LS"
             annotations = pd.read_csv(f"{PATH}/LS.csv")
+            # The CSV and the .wav filenames use different codes for the same sound
+            # (CSV: _G_ / _C_, files: _CC_ / _FC_). Rewrite the CSV IDs so they match the filenames.
             annotations["Lung Sound ID"] = annotations["Lung Sound ID"].str.replace("_G_", "_CC_")
             annotations["Lung Sound ID"] = annotations["Lung Sound ID"].str.replace("_C_", "_FC_")
-            #Take out the .wav from the file to get the sound ID
-            soundID = re.search(r".*(?=.wav$)", file.name).group()
-            #Get the row that contains the data for the file by matching the soundID
-            row =  annotations.loc[annotations["Lung Sound ID"] == soundID]
-            #The label is a tuple with the type of sound, the first value is Lung and second is Heart
-            if row["Lung Sound Type"].empty or pd.isna(row["Lung Sound Type"].values[0]):
-                label = None
-            else:
-                label = (str(row["Lung Sound Type"].values[0]), None)
-            #The patient is the dataset-type_rec-index of the recording
-            patient = f"HLS-LS{row.index.start}"
-            #The location of the recording
-            location = None if row["Location"].empty else row["Location"].values[0]
-            if label is None:
-                strat_key = f"HLS-L:unlabelled"
-            else:
-                strat_key = f"HLS-L:{"Normal" if label[0] == "Normal" else "Abnormal"}"
-            return patient, location, label, strat_key
+            id_columns = ["Lung Sound ID"]
+            content = AudioType.LUNG
         case AudioType.HEART:
-            # Read the corresponding csv file
+            folder = "HS"
             annotations = pd.read_csv(f"{PATH}/HS.csv")
-            #Take out the .wav from the file to get the sound ID
-            soundID = re.search(r".*(?=.wav$)", file.name).group()
-            #Get the row that contains the data for the file by matching the soundID
-            row = annotations.loc[annotations["Heart Sound ID"] == soundID]
-            #The label is a tuple with the type of sound, the first value is Lung and second is Heart
-            if row["Heart Sound Type"].empty or pd.isna(row["Heart Sound Type"].values[0]):
-                label = None
-            else:
-                label = (None, row["Heart Sound Type"].values[0])
-            #The patient is the dataset-type_rec-index of the recording
-            patient = f"HLS-HS{row.index.start}"
-            #The location of the recording
-            location = None if row["Location"].empty else row["Location"].values[0]
-            if label is None:
-                strat_key = f"HLS-H:unlabelled"
-            else:
-                strat_key = f"HLS-H:{"Normal" if label[1] == "Normal" else "Abnormal"}"
-            return patient, location, label, strat_key
+            id_columns = ["Heart Sound ID"]
+            content = AudioType.HEART
         case AudioType.MIX:
-            # Read the corresponding csv file
+            folder = "Mix"
             annotations = pd.read_csv(f"{PATH}/Mix.csv")
-            #Take out the .wav from the file to get the sound ID
-            soundID = re.search(r".*(?=.wav$)", file.name).group()
-            #The patient is the dataset-type_rec-index of the recording
-            patient = f"HLS-Mix{int(re.search(r"\d*(?=.wav$)", file.name).group()) - 1}"
-            #Get the row that contains the data for the file by matching the soundID with the Heart, Lung or Mixed ID in the table
-            row = annotations.loc[(annotations["Lung Sound ID"] == soundID) | (annotations["Heart Sound ID"] == soundID) | (annotations["Mixed Sound ID"] == soundID)]
-            #The label is a tuple with the type of sound, the first value is Lung and second is Heart
-            if row["Heart Sound Type"].empty or pd.isna(row["Heart Sound Type"].values[0]):
-                labelH = None
-            else:
-                labelH = str(row["Heart Sound Type"].values[0])
-                
-            if row["Lung Sound Type"].empty or pd.isna(row["Lung Sound Type"].values[0]):
-                labelL = None
-            else:
-                labelL = str(row["Lung Sound Type"].values[0])
+            # Each Mix.csv row describes three files (lung, heart and mixed), so match against the three ID columns
+            id_columns = ["Lung Sound ID", "Heart Sound ID", "Mixed Sound ID"]
+            # Mix holds lung-only (L...), heart-only (H...) and mixed (M...) files; the name tells which
+            content = AudioType.from_filename(file.name)
+            if content == AudioType.UNKNOWN:
+                raise ValueError(f"Could not find the content of {file.name} from its name")
+        case _:
+            raise ValueError(f"Unknown HLS sub-folder for {file.name}")
 
-            label = None if (labelH is None or labelL is None) else (labelL, labelH)
-            #The location of the recording
-            location = None if row["Location"].empty else row["Location"].values[0]
-            if label is None:
-                strat_key = f"HLS:unlabelled"
-            else:
-                strat_key = f"HLS-L:{"Normal" if label[0] == "Normal" else "Abnormal"}|H:{"Normal" if label[1] == "Normal" else "Abnormal"}"
-            return patient, location, label, strat_key
-        case _: 
-            raise ValueError(f"... {file}")
+    row = annotations.loc[annotations[id_columns].eq(soundID).any(axis=1)]
+
+    if type_rec == AudioType.MIX:
+        # Mix filenames are numbered from 1; subtract 1 so the IDs start at 0 like the LS/HS ones
+        patient = f"HLS-Mix{int(re.search(r"\d*(?=.wav$)", file.name).group()) - 1}"
+    else:
+        patient = f"HLS-{folder}{row.index.start}"
+
+    location = None if row["Location"].empty else row["Location"].values[0]
+    label, strat_key = _label_and_strat_key(content, _read_label(row, "Lung Sound Type"), _read_label(row, "Heart Sound Type"))
+    # content stays an AudioType inside this function (the helpers compare against the enum);
+    # it is converted to a character only here, for the inventory
+    return patient, location, label, strat_key, content.value
+
+def _read_label(row: DataFrame, column: str):
+    """Return the label stored in `column` of the matched row as a str.
+
+    Returns None if the CSV has no such column, if no row matched the file, 
+    or if the cell is empty.
+    """
+    if column not in row or row[column].empty or pd.isna(row[column].values[0]):
+        return None
+    return str(row[column].values[0])
+
+def _label_and_strat_key(content: AudioType, lung_label, heart_label):
+    """Build (label, strat_key) keeping only the labels of the sounds the file contains.
+
+    A lung-only file ignores the heart label and vice versa, so identical audio always gets the
+    same label. If a label the file needs is missing, returns (None, "...:unlabelled").
+    """
+    match content:
+        case AudioType.LUNG:
+            if lung_label is None:
+                return None, "HLS-L:unlabelled"
+            return (lung_label, None), f"HLS-L:{_normal_or_abnormal(lung_label)}"
+        case AudioType.HEART:
+            if heart_label is None:
+                return None, "HLS-H:unlabelled"
+            return (None, heart_label), f"HLS-H:{_normal_or_abnormal(heart_label)}"
+        case AudioType.MIX:
+            if lung_label is None or heart_label is None:
+                return None, "HLS:unlabelled"
+            return (lung_label, heart_label), f"HLS-L:{_normal_or_abnormal(lung_label)}|H:{_normal_or_abnormal(heart_label)}"
+
+def _normal_or_abnormal(label: str):
+    """Collapse a specific label into the two classes used for stratification."""
+    return "Normal" if label == "Normal" else "Abnormal"
