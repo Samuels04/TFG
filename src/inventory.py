@@ -8,6 +8,7 @@ import hashlib
 import yaml
 from enum import Enum
 from sklearn.model_selection import StratifiedGroupKFold
+from src.types import AudioType
 
 def generate():
     """Generates the inventory.csv file containing data from all audio files present accross all available datasets. 
@@ -26,32 +27,23 @@ def generate():
 
         #Extract the dataset and subfolder from the file's path
         dataset = file.relative_to(raw_data).parts[0]
-        folder = file.relative_to(raw_data).parts[1]
+        audio_type = AudioType.match_file(dataset, file.relative_to(raw_data).parts[1])
 
         # Read the annotations according to each dataset, if the dataset is not found, an error is raised
         match dataset:
             case "HLS-CMDS":
-                patient, location, label = src.datasets.hls.read_annotations(file, folder)
+                patient, location, label, strat_key = src.datasets.hls.read_annotations(file, audio_type)       
                 if label is None:
                     lung_label = None
                     heart_label = None
-                    strat_key = "HLS:unlabelled"
                 else:
                     lung_label = label[0]
-                    heart_label = label[1]
-                    if pd.isna(lung_label):
-                        strat_key = f"HLS-H:{"Normal" if heart_label == "Normal" else "Abnormal"}"
-                    elif pd.isna(heart_label):
-                        strat_key = f"HLS-L:{"Normal" if lung_label == "Normal" else "Abnormal"}"
-                    elif pd.isna(lung_label) and pd.isna(heart_label):
-                        strat_key = "HLS:unlabelled"
-                    else:
-                        strat_key = f"HLS-L:{"Normal" if lung_label == "Normal" else "Abnormal"}|H:{"Normal" if heart_label == "Normal" else "Abnormal"}"
+                    heart_label = label[1] 
                 disease = None
             case "NIH":
-                patient, location, disease = src.datasets.nih.read_annotations(file)
+                patient, location, disease, strat_key = src.datasets.nih.read_annotations(file)
                 lung_label = None
-                strat_key = "NIH:unlabelled" if pd.isna(disease) else f"NIH:{disease}"
+                heart_label = None
             case _:
                 raise ValueError()
 
@@ -138,26 +130,3 @@ def search_row(row: pd.Series):
                 type = "audio"
     return ds, type
 
-class AudioType(Enum):
-    LUNG = "lung"
-    HEART = "heart"
-    MIX = "mix"
-    UNKNOWN = ""
-
-    @classmethod
-    def match_file(cls, dataset: str, group: str) -> "AudioType":
-        match dataset.lower():
-            case "hls" | "hls-cmds":
-                match group.lower():
-                    case "lung":
-                        return cls.LUNG
-                    case "heart":
-                        return cls.HEART
-                    case "mix":
-                        return cls.MIX
-                    case _:
-                        return cls.UNKNOWN
-            case "nih":
-                return cls.LUNG
-            case _:
-                return cls.UNKNOWN

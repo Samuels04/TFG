@@ -15,5 +15,6 @@ def read_annotations(file: Path):
     #Extract the row corresponding to the patient, then from the row get the location and the label
     row = annotations.loc[patient_no - 1]
     location = row["Location"]
-    label = str(row["Diagnosis"]).lower()
-    return patient, location, label
+    disease = row["Diagnosis"]
+    strat_key = "NIH:unlabelled" if pd.isna(disease) else f"NIH:{str(disease).lower()}"
+    return patient, location, str(disease).lower(), strat_key
