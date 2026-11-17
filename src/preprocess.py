@@ -35,15 +35,26 @@ def normalize(file: np.ndarray):
 
     return normalized_file
 
-def band_split(file: np.ndarray, type: AudioType, config, target_sr):
-    match type:
-        case AudioType.LUNG:
-            window = [config["lung-window"]]
-            sos = sig.butter(N=4, Wn=window, btype='bandpass', output="sos", fs=target_sr)
-        case AudioType.HEART:
-            sos = sig.butter(N=4, Wn=window, btype='bandpass', output="sos", fs=target_sr)
-        case AudioType.MIX:
-            sos = sig.butter(N=4, Wn=window, btype='bandpass', output="sos", fs=target_sr)
-        case AudioType.UNKNOWN:
-            raise ValueError("Unknown type of audio file")
-    return file
+def band_split(file: np.ndarray, config, target_sr):
+    """Splits an audio file into its lung and its heart bands
+    
+    Uses a butterworth filter together with second-order sections
+    Args:
+        - **file** : the audio file to split
+        - **config** : the configuration for the project
+        - **target_sr** : the target sample rate for the bands
+
+    Returns:
+        - **heart_filtered**: the band containing the heart sounds
+        - **lung_filtered**: the band containing the lung sounds
+    """
+    lung_band = [config["lung-band"]["low"],config["lung-band"]["high"]]
+    heart_band = [config["heart-band"]["low"], config["heart-band"]["high"]]
+    order = config["butterworth-filter-order"]
+    sos_lung = sig.butter(N=order, Wn=lung_band, btype='bandpass', output="sos", fs=target_sr)
+    sos_heart = sig.butter(N=order, Wn=heart_band, btype='bandpass', output="sos", fs=target_sr)
+
+
+    lung_filtered: np.ndarray = sig.sosfiltfilt(sos_lung, file)
+    heart_filtered: np.ndarray = sig.sosfiltfilt(sos_heart, file)
+    return heart_filtered, lung_filtered
