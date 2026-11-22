@@ -6,7 +6,7 @@ import src
 from src.types import AudioType
 
 
-def resample(file: np.ndarray, sr: int | float, target_sample_rate: int, config):
+def resample(file: np.ndarray, sr: int | float, target_sample_rate: int):
     """Return the signal resampled from sr to target_sample_rate.
 
     Uses polyphase resampling (scipy resample_poly), which also applies an anti-aliasing filter.
@@ -27,11 +27,8 @@ def normalize(file: np.ndarray):
     # Remove the DC offset first so it does not count towards the RMS
     normalized_file = file - np.mean(file)
     rms = np.sqrt(np.mean(normalized_file**2))
-    # NOTE: debug prints
-    print(f"post: {rms}")
     normalized_file /= (rms + EPSILON)
     rms = np.sqrt(np.mean(normalized_file**2))
-    print(f"post-post: {rms}")
 
     return normalized_file
 
@@ -58,3 +55,9 @@ def band_split(file: np.ndarray, config, target_sr):
     lung_filtered: np.ndarray = sig.sosfiltfilt(sos_lung, file)
     heart_filtered: np.ndarray = sig.sosfiltfilt(sos_heart, file)
     return heart_filtered, lung_filtered
+
+def pipeline(file: np.ndarray, sample_rate: int | float, target_sr: int, config):
+    res = resample(file=file, sr=sample_rate, target_sample_rate=target_sr)
+    norm = normalize(res)
+    heart, lung = band_split(norm, config=config, target_sr=target_sr)
+    return heart, lung

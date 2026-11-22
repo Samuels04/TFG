@@ -1,11 +1,10 @@
-version: 0.0.1
 sample-rate: 4000
 n-fft: 256
 raw-data: "../data/raw"
 lung-band:
-  low: 50
+  low: 100
   high: 1800
 heart-band:
   low: 25
-  high: 400
+  high: 175
 butterworth-filter-order: 4
