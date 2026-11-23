@@ -56,8 +56,10 @@ def band_split(file: np.ndarray, config, target_sr):
     heart_filtered: np.ndarray = sig.sosfiltfilt(sos_heart, file)
     return heart_filtered, lung_filtered
 
-def pipeline(file: np.ndarray, sample_rate: int | float, target_sr: int, config):
-    res = resample(file=file, sr=sample_rate, target_sample_rate=target_sr)
+def pipeline(path: str, config):
+    signal, sample_rate = lib.load(path, sr=None)
+    target_sr = config["sample-rate"]
+    res = resample(file=signal, sr=sample_rate, target_sample_rate=target_sr)
     norm = normalize(res)
     heart, lung = band_split(norm, config=config, target_sr=target_sr)
     return heart, lung
