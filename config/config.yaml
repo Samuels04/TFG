@@ -8,3 +8,4 @@ heart-band:
   low: 25
   high: 175
 butterworth-filter-order: 4
+hilbert-cutoff: 1
