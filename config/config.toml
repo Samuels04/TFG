@@ -1,0 +1,13 @@
+sample-rate = 4000
+n-fft = 256
+raw-data = "../data/raw"
+butterworth-filter-order = 4
+hilbert-cutoff = 1
+
+[lung-band]
+low = 100
+high = 1800
+
+[heart-band]
+low = 25
+high = 175

@@ -1,3 +1,5 @@
+from typing import Any
+
 import librosa as lib
 import numpy as np
 import scipy.signal as sig
@@ -32,7 +34,7 @@ def normalize(file: np.ndarray):
 
     return normalized_file
 
-def band_split(file: np.ndarray, config, target_sr):
+def band_split(file: np.ndarray, config: dict[str, Any], target_sr):
     """Splits an audio file into its lung and its heart bands
     
     Uses a butterworth filter together with second-order sections
@@ -56,7 +58,7 @@ def band_split(file: np.ndarray, config, target_sr):
     heart_filtered: np.ndarray = sig.sosfiltfilt(sos_heart, file)
     return heart_filtered, lung_filtered
 
-def pipeline(path: str, config):
+def pipeline(path: str, config: dict[str, Any]):
     signal, sample_rate = lib.load(path, sr=None)
     target_sr = config["sample-rate"]
     res = resample(file=signal, sr=sample_rate, target_sample_rate=target_sr)

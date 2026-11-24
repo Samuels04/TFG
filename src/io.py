@@ -1,9 +1,11 @@
+from typing import Any
+
 import librosa as lib
 import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import yaml
+import tomllib
 from pathlib import Path
 import math
 
@@ -77,11 +79,12 @@ def spectrogram(file: np.ndarray, name: str, sample_rate: int | float | None =No
     ax.set_title(f"{name}, sr={sample_rate}")
     return fig
 
-def open_config():
-    """Load config/config.yaml and return it as a dict."""
+def open_config() -> dict[str, Any]:
+    """Load config/config.toml and return it as a dict."""
     # Path built from this file's location, so it works from any working directory
-    CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "config.yaml"
+    CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "config.toml"
 
-    with open(CONFIG_PATH, "r") as f:
-        config = yaml.safe_load(f)
+    # tomllib requires the file to be opened in binary mode
+    with open(CONFIG_PATH, "rb") as f:
+        config = tomllib.load(f)
     return config

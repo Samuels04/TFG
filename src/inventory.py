@@ -5,7 +5,6 @@ import numpy as np
 import src.io
 import re
 import hashlib
-import yaml
 from enum import Enum
 from sklearn.model_selection import StratifiedGroupKFold
 from src.types import AudioType
