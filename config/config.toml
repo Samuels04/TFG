@@ -1,13 +1,18 @@
+# Target sample rate for resampling
 sample-rate = 4000
 n-fft = 256
+#Directory where the raw data from all datasets is stored
 raw-data = "../data/raw"
 butterworth-filter-order = 4
+#Cutoff frequency to apply when creating the hilbert envelope
 hilbert-cutoff = 1
 
+# Bounds for creating the lung band during band splitting
 [lung-band]
 low = 100
 high = 1800
 
+# Boudns for creating the heart band during band splitting
 [heart-band]
 low = 25
 high = 175
