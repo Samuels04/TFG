@@ -6,6 +6,8 @@ raw-data = "../data/raw"
 butterworth-filter-order = 4
 #Cutoff frequency to apply when creating the hilbert envelope
 hilbert-cutoff = 1
+#Window size for shannon envelope normalization
+window-size = 0.02
 
 # Bounds for creating the lung band during band splitting
 [lung-band]
