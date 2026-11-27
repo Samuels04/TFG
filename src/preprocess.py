@@ -34,7 +34,7 @@ def normalize(file: np.ndarray):
 
     return normalized_file
 
-def band_split(file: np.ndarray, config: dict[str, Any], target_sr):
+def band_split(file: np.ndarray, butterworth_order, target_sr, lung_window: list, heart_window: list):
     """Splits an audio file into its lung and its heart bands
     
     Uses a butterworth filter together with second-order sections
@@ -47,11 +47,8 @@ def band_split(file: np.ndarray, config: dict[str, Any], target_sr):
         - **heart_filtered**: the band containing the heart sounds
         - **lung_filtered**: the band containing the lung sounds
     """
-    lung_band = [config["lung-band"]["low"],config["lung-band"]["high"]]
-    heart_band = [config["heart-band"]["low"], config["heart-band"]["high"]]
-    order = config["butterworth-filter-order"]
-    sos_lung = sig.butter(N=order, Wn=lung_band, btype='bandpass', output="sos", fs=target_sr)
-    sos_heart = sig.butter(N=order, Wn=heart_band, btype='bandpass', output="sos", fs=target_sr)
+    sos_lung = sig.butter(N=butterworth_order, Wn=lung_window, btype='bandpass', output="sos", fs=target_sr)
+    sos_heart = sig.butter(N=butterworth_order, Wn=heart_window, btype='bandpass', output="sos", fs=target_sr)
 
 
     lung_filtered: np.ndarray = sig.sosfiltfilt(sos_lung, file)
@@ -63,5 +60,7 @@ def pipeline(path: str, config: dict[str, Any]):
     target_sr = config["sample-rate"]
     res = resample(file=signal, sr=sample_rate, target_sample_rate=target_sr)
     norm = normalize(res)
-    heart, lung = band_split(norm, config=config, target_sr=target_sr)
+    lung_wn = [config["lung-band"]["low"], config["lung-band"]["high"]]
+    heart_wn = [config["heart-band"]["low"], config["heart-band"]["high"]]
+    heart, lung = band_split(norm, config["butterworth-filter-order"], target_sr, lung_wn, heart_wn)
     return heart, lung
